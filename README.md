@@ -1,333 +1,210 @@
-# FFCNN: Fourier Feature Convolutional Neural Network for Microplastic Identification via Raman Spectroscopy
+# FFCNN Raman Microplastics Online Analysis Platform
 
-<p align="center">
-  <img src="https://img.shields.io/badge/PyTorch-2.0+-EE4C2B?style=for-the-badge&logo=pytorch" alt="PyTorch">
-  <img src="https://img.shields.io/badge/python-3.8+-3776AB?style=for-the-badge&logo=python" alt="Python">
-  <a href="#"><img src="https://img.shields.io/badge/Journal-EST-blue"></a>
-</p>
+[English](README.md) | [中文](README_CN.md)
 
-<p align="center">
-  <strong>FFCNN</strong> — An innovative deep learning framework integrating Fourier transform with convolutional neural networks for rapid identification and classification of mixed microplastics using Raman spectroscopy.
-</p>
+## 1. Project Overview
 
----
+This is a web-based platform for analyzing Raman spectral data to identify microplastics using the FFCNN (Fourier Feature Convolutional Neural Network) framework.
 
-## 🔬 Introduction
+### Features
 
-Microplastic (MP) pollution has become a critical environmental concern. Raman spectroscopy combined with machine learning offers a promising non-destructive approach for MP identification. However, traditional methods struggle with:
+- **Online Data Submission**: Upload Excel files with Raman spectral data
+- **Automatic Classification**: Identifies 15+ plastic types
+- **HFM Visualization**: Generates Hierarchical Feature Map heatmaps
+- **Real-time Analysis**: Fast inference with pre-trained models
 
-- ❓ **Mixed polymer identification** in complex environmental samples
-- ❓ **Aged MPs** with spectral shifts from weathering
-- ❓ **Multi-source discrimination** for source apportionment
+## 2. Data Format Specification
 
-**FFCNN** addresses these challenges by introducing:
+### File Requirements
 
-1. ✅ **Fourier Feature Module** — Extract frequency-domain features preserving subtle spectral variations
-2. ✅ **Hierarchical Attention** — Multi-scale feature fusion for mixed polymer detection
-3. ✅ **Self-supervised Pre-training** — Domain adaptation for aged/or unknown MPs
+| Parameter | Requirement |
+|-----------|-------------|
+| Format | `.xlsx` (Excel 2007+) |
+| Layout | Every 2 columns = 1 spectrum (wavenumber, intensity) |
+| Wavenumber Range | 500 ~ 3500 cm⁻¹ |
+| Maximum Spectra | 1000 |
+| Data Start | Cell A1 (no headers) |
 
-<div align="center">
-  <img src="docs/figures/fig1_framework.png" width="800" alt="FFCNN Framework">
-  <br>
-  <em>Fig.1 Overview of FFCNN architecture</em>
-</div>
+### Excel Structure
 
----
+```
+Column 1: Spectrum 1 Wavenumbers (500, 501, 502, ..., 3500)
+Column 2: Spectrum 1 Intensities (0.12, 0.45, 0.78, ...)
+Column 3: Spectrum 2 Wavenumbers
+Column 4: Spectrum 2 Intensities
+...
+```
 
-## 📊 Performance Highlights
+### Supported Plastic Types
 
-| Metric | Value |
-|--------|-------|
-| **Accuracy** | 96.8% (10-label classification) |
-| **F1-Score** | 0.94 (macro) |
-| **Inference Speed** | ~50ms per spectrum |
-| **Generalization** | 89.2% on aged MPs in lake water |
+- PP (Polypropylene)
+- PE (Polyethylene)
+- PS (Polystyrene)
+- PVC (Polyvinyl Chloride)
+- PET (Polyethylene Terephthalate)
+- PA (Polyamide)
+- PC (Polycarbonate)
+- PMMA (Polymethyl Methacrylate)
+- PU (Polyurethane)
+- EPS (Expanded Polystyrene)
+- ABS (Acrylonitrile Butadiene Styrene)
+- POM (Polyoxymethylene)
+- PBT (Polybutylene Terephthalate)
+- PPO (Polyphenylene Oxide)
+- PPS (Polyphenylene Sulfide)
 
-<div align="center">
-  <img src="docs/figures/fig2_accuracy.png" width="500" alt="Performance Comparison">
-  <br>
-  <em>Fig.2 Comparison with CNN, ResNet, and DenseNet</em>
-</div>
+## 3. Installation
 
----
+### Prerequisites
 
-## 🚀 Quick Start
+- Python 3.8+
+- PyTorch 1.10+
+- 4GB+ RAM
 
-### Installation
+### Install Dependencies
 
 ```bash
-# Clone repository
-git clone https://github.com/YOUR_USERNAME/ffcnn.git
-cd ffcnn
-
-# Create conda environment
-conda env create -f environment.yml
-conda activate ffcnn
+pip install -r requirements.txt
 ```
 
-### Training
+### Directory Structure
+
+```
+web_service/
+├── app.py              # Flask application
+├── predict.py         # Prediction logic
+├── templates/
+│   ├── index.html     # Main page
+│   ├── docs.html      # Documentation
+│   └── about.html    # About page
+├── static/
+├── uploads/           # Temporary file storage
+└── models/           # Link to trained models
+```
+
+## 4. Running the Server
+
+### Local Development
+
+```bash
+cd web_service
+python app.py
+```
+
+Access at: http://localhost:5000
+
+### Production Deployment
+
+Using Gunicorn:
+
+```bash
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
+```
+
+Using Docker:
+
+```bash
+docker build -t ffcnn-web .
+docker run -p 5000:5000 -v /path/to/models:/app/models ffcnn-web
+```
+
+## 5. API Usage
+
+### Upload and Analyze
+
+```bash
+curl -X POST -F "file=@your_data.xlsx" http://localhost:5000/upload
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Successfully analyzed 10 spectra",
+  "results": [
+    {
+      "index": 0,
+      "predicted": ["PP", "PE"],
+      "max_class": "PP",
+      "max_prob": 0.92,
+      "all_probs": {"PP": 0.92, "PE": 0.05, ...}
+    }
+  ],
+  "heatmap": "data:image/png;base64,..."
+}
+```
+
+### Validate File
+
+```bash
+curl -X POST -F "file=@your_data.xlsx" http://localhost:5000/validate
+```
+
+## 6. Output Results
+
+### Classification Results
+
+- **Predicted Class**: Most likely plastic type
+- **Probability**: Confidence score (0-100%)
+- **All Probabilities**: Full probability distribution
+
+### HFM Visualization
+
+Hierarchical Feature Map showing:
+
+1. Spectral intensity patterns across all samples
+2. Classification probability heatmap
+3. Feature importance visualization
+
+## 7. Configuration
+
+### Model Path
+
+Edit `predict.py` to specify model:
 
 ```python
-from train import Trainer
-
-trainer = Trainer(
-    data_path='data/train_spectra.xlsx',
-    model_name='ffcnn_microplastic',
-    num_classes=10,
-    epochs=100,
-    batch_size=32
-)
-
-trainer.train()
+MODEL_DIR = r'D:\Documents\FFCNN\models'
+DEFAULT_MODEL = 'cnn_for_multi_model_res_20260605_2157.pth'
 ```
 
-### Inference
+### Plastic Classes
+
+Edit `predict.py`:
 
 ```python
-from inference import predict
-
-results = predict(
-    model_path='models/ffcnn_best.pth',
-    input_file='data/test_spectra.xlsx',
-    output_file='results/predictions.xlsx'
-)
+PLASTIC_CLASSES = ['PP', 'PE', 'PS', ...]
 ```
 
----
+## 8. Troubleshooting
 
-## 📁 Project Structure
+### Common Issues
 
-```
-ffcnn/
-├── ffc/                    # Core FFCNN module
-│   ├── fourier_unit.py     # Fourier transform unit
-│   ├── spectral_transform.py
-│   └── __init__.py
-├── models/                 # Model architectures
-│   ├── ffcnn.py          # Main FFCNN model
-│   ├── resnet.py        # ResNet baseline
-│   └── cnn.py           # Simple CNN baseline
-├── data/                  # Data processing
-│   ├── preprocess.py     #光谱数据预处理
-│   ├── dataset.py      # PyTorch Dataset
-│   └── augmentation.py # Data augmentation
-├── train/                 # Training scripts
-│   ├── trainer.py       # Training engine
-│   └── optimizer.py  # Optimizer config
-├── inference/             # Inference pipeline
-│   ├── predictor.py   # Batch prediction
-│   └── evaluator.py  # Evaluation metrics
-├── configs/              # Configuration files
-│   ├── default.yml   # Default config
-│   └── experiment.yml
-├── scripts/             # Utility scripts
-│   ├── prepare_data.py
-│   ├── visualize_results.py
-│   └── export_model.py
-├── docs/               # Documentation
-│   └── figures/     # Figures and images
-├── tests/             # Unit tests
-├── examples/         # Example notebooks
-├── requirements.txt  # Dependencies
-├── setup.py         # Package setup
-└── README.md        # This file
+1. **File too large**: Maximum 16MB
+2. **Invalid format**: Only .xlsx supported
+3. **Out of range**: Wavenumber must be 500-3500 cm⁻¹
+4. **Too many spectra**: Maximum 1000
+
+### Logs
+
+Check console output for error messages.
+
+## 9. License
+
+MIT License
+
+## 10. Citation
+
+```bibtex
+@misc{ffcnn-raman-mps,
+  author = {77EXC},
+  title = {ffcnn-raman-MPs: Fourier Feature CNN for Microplastics Identification},
+  year = {2024},
+  url = {https://github.com/77EXC/ffcnn-raman-MPs}
+}
 ```
 
----
+## 11. Contact
 
-## 🧪 Data Format
-
-### Input Excel Format
-
-Expected format for training/inference data:
-
-| Column | Description | Example |
-|--------|-------------|---------|
-| Col 1 | Raman shift (cm⁻¹) | 534 |
-| Col 2 | Intensity | 0.324 |
-| ... | ... | ... |
-| Last cols | Labels (binary) | PE: 1, PS: 0, PET: 1... |
-
-Download sample data: [`sample_spectra.xlsx`](data/sample_spectra.xlsx)
-
-### Wavenumber Range
-
-- **Default**: 530 - 3496 cm⁻¹
-- **Resolution**: 1 cm⁻¹ step
-- **Standard points**: ~2964 data points per spectrum
-
----
-
-## 📖 Usage Examples
-
-### 1. Train Custom Model
-
-```python
-import pandas as pd
-from ffcnn import FFCNNModel
-from ffcnn.train import Trainer
-from ffcnn.data import SpectraDataset
-
-# Load data
-df = pd.read_excel('your_data.xlsx')
-X, y = df.iloc[:, :-10].values, df.iloc[:, -10:].values
-
-# Create dataset
-dataset = SpectraDataset(X, y, num_classes=10)
-
-# Train
-trainer = Trainer(model=FFCNNModel, dataset=dataset)
-trainer.train(epochs=100)
-
-# Save model
-trainer.save_model('models/custom_ffcnn.pth')
-```
-
-### 2. Batch Inference
-
-```python
-from ffcnn.inference import BatchPredictor
-
-predictor = BatchPredictor('models/custom_ffcnn.pth')
-
-# Predict
-results = predictor.predict_batch(
-    input_file='unknown_samples.xlsx',
-    output_file='predictions.xlsx',
-    return_prob=True  # Return probabilities
-)
-```
-
-### 3. Evaluate Performance
-
-```python
-from ffcnn.evaluation import Evaluator
-
-evaluator = Evaluator('models/custom_ffcnn.pth')
-report = evaluator.evaluate(
-    test_file='test_data.xlsx',
-    metrics=['accuracy', 'f1', 'precision', 'recall']
-)
-
-print(report)
-# Output:
-# Accuracy: 0.968
-# F1 (macro): 0.94
-# Precision (macro): 0.95
-# Recall (macro): 0.93
-```
-
----
-
-## ⚙️ Configuration
-
-```yaml
-# configs/default.yml
-model:
-  name: ffcnn
-  num_classes: 10
-  input_length: 2964
-
-training:
-  epochs: 100
-  batch_size: 32
-  learning_rate: 0.001
-  optimizer: adam
-  scheduler: cosine
-  early_stopping_patience: 15
-
-data:
-  train_ratio: 0.8
-  val_ratio: 0.1
-  test_ratio: 0.1
-  augmentation: true
-  mixup_alpha: 0.2
-
-ffcnn:
-  enable_lfu: true
-  groups: 1
-  spectral_pos_encoding: false
-```
-
----
-
-## 📈 Results Visualization
-
-### Confusion Matrix
-
-<div align="center">
-  <img src="docs/figures/confusion_matrix.png" width="400" alt="Confusion Matrix">
-</div>
-
-### ROC Curves
-
-<div align="center">
-  <img src="docs/figures/roc_curves.png" width="400" alt="ROC Curves">
-</div>
-
----
-
-## 🔬 Supported Polymer Types
-
-The current model supports identification of:
-
-| Label | Polymer | Abbreviation |
-|-------|---------|--------------|
-| 1 | Polyethylene | PE |
-| 2 | Polystyrene | PS |
-| 3 | Polyethylene terephthalate | PET |
-| 4 | Polypropylene | PP |
-| 5 | Polyvinyl chloride | PVC |
-| 6 | Polymethyl methacrylate | PMMA |
-| 7 | Polycarbonate | PC |
-| 8 | Nylon | PA |
-| 9 | Polylactic acid | PLA |
-| 10 | Acrylonitrile butadiene styrene | ABS |
-
----
-
-## 📚 Citation
-
-If this codebase helps your research, please cite:
-
-> Chen, X. et al. (2025). Rapid identification and source apportionment of mixed microplastics by Fourier Feature Convolutional Neural Network coupled with Raman spectroscopy. *Environmental Science & Technology*, accepeted.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) first.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- National Natural Science Foundation of China
-- Nanjing University Environmental Research Group
-- [Reference: paper DOI]
-
----
-
-## 📞 Contact
-
-- **Author**: X.Q. Chen
-- **Email**: author@university.edu.cn
-- **Project Link**: [https://github.com/YOUR_USERNAME/ffcnn](https://github.com/YOUR_USERNAME/ffcnn)
-
----
-
-<p align="center">
-  Made with 🔬 and 🧠 for environmental sustainability
-</p>
+- GitHub: https://github.com/77EXC/ffcnn-raman-MPs
+- Issues: https://github.com/77EXC/ffcnn-raman-MPs/issues
